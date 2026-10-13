@@ -17,8 +17,6 @@ Each tone is paired with a progressive geometric form:
 | B3   | 246.94         | Hexagon            |
 | C4   | 261.63         | Septagon (Heptagon)|
 
-*Note: Sequential notes from C3 to C4 use A3 and B3 (not A4/B4).*
-
 ## Features
 
 - Play individual notes with Web Audio API (sine wave with soft envelope)
