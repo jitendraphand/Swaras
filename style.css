@@ -1,0 +1,175 @@
+:root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --primary: #38bdf8;
+    --accent: #f472b6;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+    max-width: 700px;
+}
+
+h1 {
+    font-size: 3rem;
+    background: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    width: 100%;
+    max-width: 900px;
+}
+
+#visualizer {
+    background: var(--surface);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    position: relative;
+}
+
+#shapeCanvas {
+    background: #0f172a;
+    border-radius: 1rem;
+    border: 2px solid #334155;
+    display: block;
+    margin: 0 auto;
+}
+
+#currentNote {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    color: var(--primary);
+}
+
+#freqDisplay {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 700px;
+}
+
+.note-btn {
+    background: var(--surface);
+    border: 2px solid #334155;
+    border-radius: 0.75rem;
+    color: var(--text);
+    padding: 1rem 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.note-btn:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+}
+
+.note-btn.playing {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, #1e293b, #312e81);
+    box-shadow: 0 0 20px rgba(244, 114, 182, 0.4);
+}
+
+.note-btn .shape-hint {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+    font-weight: 400;
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.controls button {
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.controls button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.35);
+}
+
+.controls button:active {
+    transform: translateY(0);
+}
+
+footer {
+    margin-top: 3rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+footer a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+    h1 { font-size: 2.2rem; }
+    #shapeCanvas { width: 320px; height: 320px; }
+    .notes-grid { grid-template-columns: repeat(4, 1fr); }
+}

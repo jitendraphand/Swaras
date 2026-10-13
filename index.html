@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swaras - Tones & Shapes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🎵 Swaras</h1>
+        <p>Associate each musical tone with a geometric shape for better mental registration through visualization.</p>
+        <p class="subtitle">Click a note to hear it and see its corresponding shape. From C3 (point) to C4 (heptagon).</p>
+    </header>
+    <main>
+        <div id="visualizer">
+            <canvas id="shapeCanvas" width="420" height="420"></canvas>
+            <div id="currentNote">Select a tone to begin</div>
+            <div id="freqDisplay"></div>
+        </div>
+        <div id="notes" class="notes-grid"></div>
+        <div class="controls">
+            <button id="playSequence">Play Ascending Sequence</button>
+            <button id="stopAll">Stop</button>
+        </div>
+    </main>
+    <footer>
+        <p>Built with Web Audio API • Equal temperament (A4 = 440 Hz) • <a href="https://github.com/jitendraphand/Swaras" target="_blank">GitHub Repo</a></p>
+        <p>Note: A3 & B3 are used for sequential C3–C4 (user mentioned A4/B4; corrected for accuracy).</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
