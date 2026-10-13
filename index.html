@@ -10,7 +10,7 @@
     <header>
         <h1>🎵 Swaras</h1>
         <p>Associate each musical tone with a geometric shape for better mental registration through visualization.</p>
-        <p class="subtitle">Click a note to hear it and see its corresponding shape. From C3 (point) to C4 (heptagon).</p>
+        <p class="subtitle">Click a note to start a continuous tone and see its shape. Use Stop to pause.</p>
     </header>
     <main>
         <div id="visualizer">
@@ -21,12 +21,12 @@
         <div id="notes" class="notes-grid"></div>
         <div class="controls">
             <button id="playSequence">Play Ascending Sequence</button>
-            <button id="stopAll">Stop</button>
+            <button id="stopAll">Stop / Pause</button>
         </div>
     </main>
     <footer>
         <p>Built with Web Audio API • Equal temperament (A4 = 440 Hz) • <a href="https://github.com/jitendraphand/Swaras" target="_blank">GitHub Repo</a></p>
-        <p>Note: A3 & B3 are used for sequential C3–C4 (user mentioned A4/B4; corrected for accuracy).</p>
+        <p>Note: A3 & B3 are used for sequential C3–C4. Click any note — audio requires a user gesture to start.</p>
     </footer>
     <script src="script.js"></script>
 </body>

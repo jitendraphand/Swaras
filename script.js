@@ -13,6 +13,7 @@ let audioCtx = null;
 let currentOsc = null;
 let currentGain = null;
 let sequenceTimer = null;
+let isPlaying = false;
 
 const canvas = document.getElementById('shapeCanvas');
 const ctx = canvas.getContext('2d');
@@ -26,23 +27,37 @@ function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
+    // Always try to resume on user gesture
     if (audioCtx.state === 'suspended') {
         audioCtx.resume();
     }
+    return audioCtx;
 }
 
-function stopCurrent() {
+function stopCurrent(immediate = false) {
     if (currentOsc) {
         try {
-            currentOsc.stop();
+            if (!immediate && currentGain && audioCtx) {
+                // Quick fade out
+                const now = audioCtx.currentTime;
+                currentGain.gain.cancelScheduledValues(now);
+                currentGain.gain.setValueAtTime(currentGain.gain.value, now);
+                currentGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                currentOsc.stop(now + 0.1);
+            } else {
+                currentOsc.stop();
+            }
             currentOsc.disconnect();
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Stop error:', e);
+        }
         currentOsc = null;
     }
     if (currentGain) {
-        currentGain.disconnect();
+        try { currentGain.disconnect(); } catch (e) {}
         currentGain = null;
     }
+    isPlaying = false;
     document.querySelectorAll('.note-btn.playing').forEach(btn => btn.classList.remove('playing'));
 }
 
@@ -72,7 +87,6 @@ function drawShape(note) {
         ctx.beginPath();
         ctx.arc(cx, cy, 18, 0, Math.PI * 2);
         ctx.fill();
-        // outer ring
         ctx.beginPath();
         ctx.arc(cx, cy, 28, 0, Math.PI * 2);
         ctx.stroke();
@@ -81,7 +95,6 @@ function drawShape(note) {
         ctx.moveTo(cx - radius * 0.7, cy);
         ctx.lineTo(cx + radius * 0.7, cy);
         ctx.stroke();
-        // endpoints
         ctx.beginPath();
         ctx.arc(cx - radius * 0.7, cy, 8, 0, Math.PI * 2);
         ctx.arc(cx + radius * 0.7, cy, 8, 0, Math.PI * 2);
@@ -92,12 +105,10 @@ function drawShape(note) {
         ctx.lineTo(cx, cy - 70);
         ctx.lineTo(cx + 90, cy + 70);
         ctx.stroke();
-        // vertex dot
         ctx.beginPath();
         ctx.arc(cx, cy - 70, 8, 0, Math.PI * 2);
         ctx.fill();
     } else {
-        // Regular polygon
         const sides = note.sides;
         ctx.beginPath();
         for (let i = 0; i < sides; i++) {
@@ -109,62 +120,49 @@ function drawShape(note) {
         }
         ctx.closePath();
         ctx.stroke();
-        // subtle fill
-        ctx.globalAlpha = 0.15;
+        ctx.globalAlpha = 0.18;
         ctx.fill();
         ctx.globalAlpha = 1;
     }
 
-    // Note label on canvas
     ctx.fillStyle = '#f1f5f9';
     ctx.font = 'bold 28px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(note.name, cx, cy + radius + 36);
 }
 
-function playNote(note, duration = 1.2) {
-    initAudio();
-    stopCurrent();
+function playNote(note) {
+    const ctxAudio = initAudio();
+    stopCurrent(true); // immediate stop previous
 
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const osc = ctxAudio.createOscillator();
+    const gain = ctxAudio.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(note.freq, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(note.freq, ctxAudio.currentTime);
 
-    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    const now = ctxAudio.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.05); // louder, stays at this level
 
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(ctxAudio.destination);
 
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
+    osc.start(now);
 
     currentOsc = osc;
     currentGain = gain;
+    isPlaying = true;
 
     // Visuals
-    currentNoteEl.textContent = note.name;
+    currentNoteEl.textContent = note.name + ' (playing)';
     freqDisplay.textContent = `${note.freq.toFixed(2)} Hz • ${note.hint}`;
     drawShape(note);
 
-    // Highlight button
     const btn = document.querySelector(`.note-btn[data-note="${note.name}"]`);
     if (btn) btn.classList.add('playing');
 
-    osc.onended = () => {
-        if (currentOsc === osc) {
-            stopCurrent();
-            setTimeout(() => {
-                if (!currentOsc) {
-                    currentNoteEl.textContent = 'Select a tone';
-                    freqDisplay.textContent = '';
-                }
-            }, 300);
-        }
-    };
+    // No auto-stop — sustains until Stop is pressed or another note starts
 }
 
 function createButtons() {
@@ -173,7 +171,9 @@ function createButtons() {
         btn.className = 'note-btn';
         btn.dataset.note = note.name;
         btn.innerHTML = `${note.name}<span class="shape-hint">${note.hint}</span>`;
-        btn.addEventListener('click', () => playNote(note));
+        btn.addEventListener('click', () => {
+            playNote(note);
+        });
         notesContainer.appendChild(btn);
     });
 }
@@ -182,10 +182,13 @@ function playSequence() {
     stopAll();
     let i = 0;
     function next() {
-        if (i >= notes.length) return;
-        playNote(notes[i], 0.9);
+        if (i >= notes.length) {
+            stopAll();
+            return;
+        }
+        playNote(notes[i]);
         i++;
-        sequenceTimer = setTimeout(next, 1000);
+        sequenceTimer = setTimeout(next, 1200); // hold each note ~1.2s then next
     }
     next();
 }
@@ -198,7 +201,12 @@ function stopAll() {
     stopCurrent();
     currentNoteEl.textContent = 'Select a tone';
     freqDisplay.textContent = '';
+    // keep last shape or clear
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#334155';
+    ctx.font = '18px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click a note to see its shape', canvas.width / 2, canvas.height / 2);
 }
 
 playSequenceBtn.addEventListener('click', playSequence);
@@ -206,10 +214,15 @@ stopBtn.addEventListener('click', stopAll);
 
 // Keyboard support
 document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     const keyMap = { 'c': 0, 'd': 1, 'e': 2, 'f': 3, 'g': 4, 'a': 5, 'b': 6, 'h': 7 };
     const idx = keyMap[e.key.toLowerCase()];
     if (idx !== undefined && notes[idx]) {
         playNote(notes[idx]);
+    }
+    if (e.key === 'Escape' || e.key === ' ') {
+        e.preventDefault();
+        stopAll();
     }
 });
 
