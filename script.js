@@ -13,7 +13,6 @@ let audioCtx = null;
 let currentOsc = null;
 let currentGain = null;
 let sequenceTimer = null;
-let isPlaying = false;
 
 const canvas = document.getElementById('shapeCanvas');
 const ctx = canvas.getContext('2d');
@@ -23,13 +22,18 @@ const freqDisplay = document.getElementById('freqDisplay');
 const playSequenceBtn = document.getElementById('playSequence');
 const stopBtn = document.getElementById('stopAll');
 
-function initAudio() {
+async function ensureAudioContext() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('AudioContext created, state:', audioCtx.state);
     }
-    // Always try to resume on user gesture
     if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        try {
+            await audioCtx.resume();
+            console.log('AudioContext resumed, state:', audioCtx.state);
+        } catch (err) {
+            console.error('Failed to resume AudioContext:', err);
+        }
     }
     return audioCtx;
 }
@@ -38,10 +42,9 @@ function stopCurrent(immediate = false) {
     if (currentOsc) {
         try {
             if (!immediate && currentGain && audioCtx) {
-                // Quick fade out
                 const now = audioCtx.currentTime;
                 currentGain.gain.cancelScheduledValues(now);
-                currentGain.gain.setValueAtTime(currentGain.gain.value, now);
+                currentGain.gain.setValueAtTime(Math.max(currentGain.gain.value, 0.001), now);
                 currentGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
                 currentOsc.stop(now + 0.1);
             } else {
@@ -57,7 +60,6 @@ function stopCurrent(immediate = false) {
         try { currentGain.disconnect(); } catch (e) {}
         currentGain = null;
     }
-    isPlaying = false;
     document.querySelectorAll('.note-btn.playing').forEach(btn => btn.classList.remove('playing'));
 }
 
@@ -70,7 +72,6 @@ function drawShape(note) {
 
     ctx.clearRect(0, 0, w, h);
 
-    // Soft glow background
     const gradient = ctx.createRadialGradient(cx, cy, 20, cx, cy, radius + 40);
     gradient.addColorStop(0, note.color + '33');
     gradient.addColorStop(1, 'transparent');
@@ -131,19 +132,26 @@ function drawShape(note) {
     ctx.fillText(note.name, cx, cy + radius + 36);
 }
 
-function playNote(note) {
-    const ctxAudio = initAudio();
-    stopCurrent(true); // immediate stop previous
+async function playNote(note) {
+    const ctxAudio = await ensureAudioContext();
+    if (!ctxAudio || ctxAudio.state !== 'running') {
+        console.warn('AudioContext not running. State:', ctxAudio ? ctxAudio.state : 'null');
+        currentNoteEl.textContent = 'Click again to enable audio';
+        return;
+    }
+
+    stopCurrent(true);
 
     const osc = ctxAudio.createOscillator();
     const gain = ctxAudio.createGain();
 
-    osc.type = 'sine';
+    // Triangle is usually more audible than pure sine on many systems
+    osc.type = 'triangle';
     osc.frequency.setValueAtTime(note.freq, ctxAudio.currentTime);
 
     const now = ctxAudio.currentTime;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.4, now + 0.05); // louder, stays at this level
+    gain.gain.linearRampToValueAtTime(0.35, now + 0.04);
 
     osc.connect(gain);
     gain.connect(ctxAudio.destination);
@@ -152,9 +160,7 @@ function playNote(note) {
 
     currentOsc = osc;
     currentGain = gain;
-    isPlaying = true;
 
-    // Visuals
     currentNoteEl.textContent = note.name + ' (playing)';
     freqDisplay.textContent = `${note.freq.toFixed(2)} Hz • ${note.hint}`;
     drawShape(note);
@@ -162,7 +168,7 @@ function playNote(note) {
     const btn = document.querySelector(`.note-btn[data-note="${note.name}"]`);
     if (btn) btn.classList.add('playing');
 
-    // No auto-stop — sustains until Stop is pressed or another note starts
+    console.log('Playing', note.name, 'at', note.freq, 'Hz');
 }
 
 function createButtons() {
@@ -171,9 +177,7 @@ function createButtons() {
         btn.className = 'note-btn';
         btn.dataset.note = note.name;
         btn.innerHTML = `${note.name}<span class="shape-hint">${note.hint}</span>`;
-        btn.addEventListener('click', () => {
-            playNote(note);
-        });
+        btn.addEventListener('click', () => playNote(note));
         notesContainer.appendChild(btn);
     });
 }
@@ -188,7 +192,7 @@ function playSequence() {
         }
         playNote(notes[i]);
         i++;
-        sequenceTimer = setTimeout(next, 1200); // hold each note ~1.2s then next
+        sequenceTimer = setTimeout(next, 1200);
     }
     next();
 }
@@ -201,7 +205,6 @@ function stopAll() {
     stopCurrent();
     currentNoteEl.textContent = 'Select a tone';
     freqDisplay.textContent = '';
-    // keep last shape or clear
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#334155';
     ctx.font = '18px system-ui';
@@ -212,7 +215,6 @@ function stopAll() {
 playSequenceBtn.addEventListener('click', playSequence);
 stopBtn.addEventListener('click', stopAll);
 
-// Keyboard support
 document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     const keyMap = { 'c': 0, 'd': 1, 'e': 2, 'f': 3, 'g': 4, 'a': 5, 'b': 6, 'h': 7 };
@@ -228,7 +230,6 @@ document.addEventListener('keydown', (e) => {
 
 createButtons();
 
-// Initial empty state
 ctx.fillStyle = '#334155';
 ctx.font = '18px system-ui';
 ctx.textAlign = 'center';
