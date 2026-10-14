@@ -14,6 +14,13 @@ let currentOsc = null;
 let currentGain = null;
 let sequenceTimer = null;
 
+// Live mic detection state
+let micStream = null;
+let analyser = null;
+let micSource = null;
+let isListening = false;
+let animationId = null;
+
 const canvas = document.getElementById('shapeCanvas');
 const ctx = canvas.getContext('2d');
 const notesContainer = document.getElementById('notes');
@@ -21,6 +28,12 @@ const currentNoteEl = document.getElementById('currentNote');
 const freqDisplay = document.getElementById('freqDisplay');
 const playSequenceBtn = document.getElementById('playSequence');
 const stopBtn = document.getElementById('stopAll');
+
+const startMicBtn = document.getElementById('startMic');
+const stopMicBtn = document.getElementById('stopMic');
+const liveFreqEl = document.getElementById('liveFreq');
+const liveNoteEl = document.getElementById('liveNote');
+const micStatusEl = document.getElementById('micStatus');
 
 async function ensureAudioContext() {
     if (!audioCtx) {
@@ -145,7 +158,6 @@ async function playNote(note) {
     const osc = ctxAudio.createOscillator();
     const gain = ctxAudio.createGain();
 
-    // Triangle is usually more audible than pure sine on many systems
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(note.freq, ctxAudio.currentTime);
 
@@ -211,6 +223,140 @@ function stopAll() {
     ctx.textAlign = 'center';
     ctx.fillText('Click a note to see its shape', canvas.width / 2, canvas.height / 2);
 }
+
+// --- Live Mic Frequency Detection ---
+
+function getClosestNote(freq) {
+    if (!freq || freq < 80 || freq > 400) return { name: '--', cents: 0 };
+    let closest = notes[0];
+    let minDiff = Infinity;
+    for (const note of notes) {
+        const diff = Math.abs(freq - note.freq);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = note;
+        }
+    }
+    const cents = 1200 * Math.log2(freq / closest.freq);
+    return { name: closest.name, cents: cents };
+}
+
+function autoCorrelate(buf, sampleRate) {
+    const SIZE = buf.length;
+    let rms = 0;
+    for (let i = 0; i < SIZE; i++) {
+        const val = buf[i];
+        rms += val * val;
+    }
+    rms = Math.sqrt(rms / SIZE);
+    if (rms < 0.01) return -1; // too quiet
+
+    let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+    for (let i = 0; i < SIZE / 2; i++) {
+        if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+    }
+    for (let i = 1; i < SIZE / 2; i++) {
+        if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+    }
+
+    buf = buf.slice(r1, r2);
+    const newSize = buf.length;
+
+    const c = new Array(newSize).fill(0);
+    for (let i = 0; i < newSize; i++) {
+        for (let j = 0; j < newSize - i; j++) {
+            c[i] = c[i] + buf[j] * buf[j + i];
+        }
+    }
+
+    let d = 0; while (c[d] > c[d + 1]) d++;
+    let maxval = -1, maxpos = -1;
+    for (let i = d; i < newSize; i++) {
+        if (c[i] > maxval) {
+            maxval = c[i];
+            maxpos = i;
+        }
+    }
+
+    let T0 = maxpos;
+    const x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+    const a = (x1 + x3 - 2 * x2) / 2;
+    const b = (x3 - x1) / 2;
+    if (a) T0 = T0 - b / (2 * a);
+
+    return sampleRate / T0;
+}
+
+async function startMic() {
+    try {
+        micStatusEl.textContent = 'Requesting microphone permission...';
+        const ctxAudio = await ensureAudioContext();
+
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micSource = ctxAudio.createMediaStreamSource(micStream);
+        analyser = ctxAudio.createAnalyser();
+        analyser.fftSize = 2048;
+        micSource.connect(analyser);
+
+        isListening = true;
+        startMicBtn.style.display = 'none';
+        stopMicBtn.style.display = 'inline-block';
+        micStatusEl.textContent = 'Listening... Sing or play a note';
+
+        detectPitch();
+    } catch (err) {
+        console.error('Mic error:', err);
+        micStatusEl.textContent = 'Microphone access denied or unavailable';
+        isListening = false;
+    }
+}
+
+function stopMic() {
+    isListening = false;
+    if (animationId) cancelAnimationFrame(animationId);
+    if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+    }
+    if (micSource) {
+        try { micSource.disconnect(); } catch (e) {}
+        micSource = null;
+    }
+    analyser = null;
+
+    startMicBtn.style.display = 'inline-block';
+    stopMicBtn.style.display = 'none';
+    liveFreqEl.textContent = 'Live: -- Hz';
+    liveNoteEl.textContent = 'Closest note: --';
+    micStatusEl.textContent = 'Mic stopped';
+}
+
+function detectPitch() {
+    if (!isListening || !analyser) return;
+
+    const buffer = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buffer);
+
+    const sampleRate = audioCtx.sampleRate;
+    const freq = autoCorrelate(buffer, sampleRate);
+
+    if (freq > 0) {
+        const closest = getClosestNote(freq);
+        liveFreqEl.textContent = `Live: ${freq.toFixed(1)} Hz`;
+        const centsText = closest.cents ? ` (${closest.cents > 0 ? '+' : ''}${closest.cents.toFixed(0)} cents)` : '';
+        liveNoteEl.textContent = `Closest: ${closest.name}${centsText}`;
+    } else {
+        liveFreqEl.textContent = 'Live: -- Hz';
+        liveNoteEl.textContent = 'Closest note: --';
+    }
+
+    animationId = requestAnimationFrame(detectPitch);
+}
+
+startMicBtn.addEventListener('click', startMic);
+stopMicBtn.addEventListener('click', stopMic);
+
+// --- Existing controls ---
 
 playSequenceBtn.addEventListener('click', playSequence);
 stopBtn.addEventListener('click', stopAll);
