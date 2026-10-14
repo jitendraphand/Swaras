@@ -18,6 +18,15 @@
             <div id="currentNote">Select a tone to begin</div>
             <div id="freqDisplay"></div>
         </div>
+
+        <div id="liveDetector" class="live-detector">
+            <button id="startMic">🎙️ Start Mic Frequency</button>
+            <button id="stopMic" style="display:none;">⏹️ Stop Mic</button>
+            <div id="liveFreq">Live: -- Hz</div>
+            <div id="liveNote">Closest note: --</div>
+            <div id="micStatus" class="mic-status"></div>
+        </div>
+
         <div id="notes" class="notes-grid"></div>
         <div class="controls">
             <button id="playSequence">Play Ascending Sequence</button>
@@ -26,7 +35,7 @@
     </main>
     <footer>
         <p>Built with Web Audio API (tones generated in the browser — no audio files) • Equal temperament (A4 = 440 Hz) • <a href="https://github.com/jitendraphand/Swaras" target="_blank">GitHub Repo</a></p>
-        <p>Click any note — audio requires a user gesture to start. Check browser volume if silent.</p>
+        <p>Click any note — audio requires a user gesture to start. Check browser volume if silent. Mic feature requires permission.</p>
     </footer>
     <script src="script.js"></script>
 </body>
