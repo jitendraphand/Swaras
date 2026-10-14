@@ -19,12 +19,23 @@ Each tone is paired with a progressive geometric form:
 
 ## Features
 
-- Play individual notes with Web Audio API (sine wave with soft envelope)
+- Play individual notes with Web Audio API (triangle wave with soft envelope)
 - Real-time shape visualization on canvas
 - Play ascending sequence
 - Keyboard support (C D E F G A B H)
+- **Live microphone frequency detector** — shows real-time pitch (Hz) and closest note while singing or playing
 - Responsive design
 - No dependencies — pure HTML/CSS/JS
+
+## Live Mic Frequency
+
+Click **Start Mic Frequency** to begin. The browser will ask for microphone permission. While listening:
+
+- Displays the detected fundamental frequency in Hz
+- Shows the closest note from the C3–C4 range and the cents offset
+- Works best with a clear monophonic source (voice, single instrument note)
+
+Requires a modern browser with Web Audio API and microphone support (Chrome, Firefox, Edge, Safari on recent devices). Must be served over HTTPS.
 
 ## GitHub Pages
 
@@ -42,7 +53,7 @@ This repository is set up for GitHub Pages.
 
 ## Local Development
 
-Just open `index.html` in a modern browser. Audio requires a user gesture to start (browser policy).
+Just open `index.html` in a modern browser. Audio requires a user gesture to start (browser policy). Microphone access also requires a user gesture and HTTPS for production use.
 
 ## License
 
