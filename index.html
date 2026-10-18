@@ -3,40 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swaras - Tones & Shapes</title>
+    <title>Swaras — Tones & Shapes</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
-        <h1>🎵 Swaras</h1>
-        <p>Associate each musical tone with a geometric shape for better mental registration through visualization.</p>
-        <p class="subtitle">Click a note to start a continuous tone and see its shape. Use Stop to pause.</p>
+        <h1>Swaras</h1>
+        <p class="tagline">Associate each musical tone with a geometric shape for deeper mental registration.</p>
+        <p class="subtitle">Click a note for continuous tone + shape. Switch waveforms, adjust volume, or use the mic detector.</p>
     </header>
+
     <main>
+        <div class="top-controls">
+            <div class="control-group">
+                <label class="control-label">Waveform</label>
+                <div class="waveform-selector" id="waveformSelector">
+                    <button class="wave-btn active" data-wave="sine" title="Pure sine wave">Sine</button>
+                    <button class="wave-btn" data-wave="triangle" title="Soft triangle">Triangle</button>
+                    <button class="wave-btn" data-wave="sawtooth" title="Bright sawtooth">Sawtooth</button>
+                    <button class="wave-btn" data-wave="square" title="Hollow square">Square</button>
+                </div>
+            </div>
+
+            <div class="control-group volume-group">
+                <label class="control-label" for="volumeSlider">Volume</label>
+                <div class="volume-wrapper">
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.35">
+                    <span id="volumeValue">35%</span>
+                </div>
+            </div>
+        </div>
+
         <div id="visualizer">
-            <canvas id="shapeCanvas" width="420" height="420"></canvas>
+            <canvas id="shapeCanvas" width="480" height="480"></canvas>
             <div id="currentNote">Select a tone to begin</div>
             <div id="freqDisplay"></div>
         </div>
 
         <div id="liveDetector" class="live-detector">
-            <button id="startMic">🎙️ Start Mic Frequency</button>
-            <button id="stopMic" style="display:none;">⏹️ Stop Mic</button>
+            <div class="mic-header">
+                <button id="startMic">Start Mic</button>
+                <button id="stopMic" style="display:none;">Stop Mic</button>
+            </div>
             <div id="liveFreq">Live: -- Hz</div>
             <div id="liveNote">Closest note: --</div>
             <div id="micStatus" class="mic-status"></div>
         </div>
 
         <div id="notes" class="notes-grid"></div>
+
         <div class="controls">
-            <button id="playSequence">Play Ascending Sequence</button>
-            <button id="stopAll">Stop / Pause</button>
+            <button id="playSequence">Play Sequence</button>
+            <button id="stopAll">Stop</button>
         </div>
     </main>
+
     <footer>
-        <p>Built with Web Audio API (tones generated in the browser — no audio files) • Equal temperament (A4 = 440 Hz) • <a href="https://github.com/jitendraphand/Swaras" target="_blank">GitHub Repo</a></p>
-        <p>Click any note — audio requires a user gesture to start. Check browser volume if silent. Mic feature requires permission.</p>
+        <p>Built with Web Audio API • Equal temperament (A4 = 440 Hz) • <a href="https://github.com/jitendraphand/Swaras" target="_blank">GitHub</a></p>
+        <p class="footer-note">Click any note (audio needs a user gesture). Keyboard: C D E F G A B H • Esc/Space to stop. Mic requires permission.</p>
     </footer>
+
     <script src="script.js"></script>
 </body>
 </html>
