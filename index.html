@@ -3,69 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#070a12">
+    <meta name="description" content="Swaras pairs every note of the scale with a geometric shape. Play tones, sing along and watch your pitch drawn live.">
     <title>Swaras — Tones & Shapes</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3.5l9.4 4.5 2.3 10.2-6.5 8.1H10.8l-6.5-8.1L6.6 8z' fill='none' stroke='%23f472b6' stroke-width='2.6' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='16.5' r='3.2' fill='%23f87171'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>Swaras</h1>
-        <p class="tagline">Associate each musical tone with a geometric shape for deeper mental registration.</p>
-        <p class="subtitle">Click a note for continuous tone + shape. Switch waveforms, adjust volume, or use the mic detector.</p>
-    </header>
+    <div class="app">
+        <header class="topbar">
+            <a class="brand" href="./" aria-label="Swaras">
+                <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+                    <path d="M16 3.5l9.4 4.5 2.3 10.2-6.5 8.1H10.8l-6.5-8.1L6.6 8z" />
+                    <circle cx="16" cy="16.5" r="3.2" />
+                </svg>
+                <span class="brand-name">Swaras</span>
+            </a>
+            <p class="brand-tag">Every note has a shape. <span>Sa is a point, Re a line, Ga an angle — each step up the scale adds a side.</span></p>
+            <a class="icon-link" href="https://github.com/jitendraphand/Swaras" target="_blank" rel="noopener" aria-label="Source on GitHub">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+            </a>
+        </header>
 
-    <main>
-        <div class="top-controls">
-            <div class="control-group">
-                <label class="control-label">Waveform</label>
-                <div class="waveform-selector" id="waveformSelector">
-                    <button class="wave-btn active" data-wave="sine" title="Pure sine wave">Sine</button>
-                    <button class="wave-btn" data-wave="triangle" title="Soft triangle">Triangle</button>
-                    <button class="wave-btn" data-wave="sawtooth" title="Bright sawtooth">Sawtooth</button>
-                    <button class="wave-btn" data-wave="square" title="Hollow square">Square</button>
+        <main class="layout">
+            <section class="card stage" id="stage" aria-labelledby="stageHeading">
+                <div class="card-head">
+                    <h2 class="eyebrow" id="stageHeading">Shape</h2>
+                    <span class="chip" id="stageMode" data-mode="idle">Ready</span>
                 </div>
-            </div>
-
-            <div class="control-group volume-group">
-                <label class="control-label" for="volumeSlider">Volume</label>
-                <div class="volume-wrapper">
-                    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.35">
-                    <span id="volumeValue">35%</span>
+                <div class="stage-visual">
+                    <canvas id="shapeCanvas" role="img" aria-label="No note selected"></canvas>
                 </div>
-            </div>
-        </div>
+                <div class="stage-readout">
+                    <div class="stage-title">
+                        <span class="stage-note" id="stageNote">—</span>
+                        <span class="stage-swara" id="stageSwara"></span>
+                    </div>
+                    <p class="stage-detail" id="stageDetail">Tap a note to hear it, or start listening and sing.</p>
+                    <div class="tuner" id="tuner" data-state="off" aria-hidden="true">
+                        <div class="tuner-scale">
+                            <span class="tuner-zone"></span>
+                            <span class="tuner-needle" id="tunerNeedle"></span>
+                        </div>
+                        <div class="tuner-legend">
+                            <span>♭ flat</span>
+                            <strong id="tunerText">—</strong>
+                            <span>sharp ♯</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        <div id="visualizer">
-            <canvas id="shapeCanvas" width="480" height="480"></canvas>
-            <div id="currentNote">Select a tone to begin</div>
-            <div id="freqDisplay"></div>
-        </div>
+            <section class="card trace" aria-labelledby="traceHeading">
+                <div class="card-head">
+                    <div class="head-text">
+                        <h2 class="eyebrow" id="traceHeading">Pitch trace</h2>
+                        <p class="head-sub" id="micStatus" role="status">Sing and watch your voice move between the notes.</p>
+                    </div>
+                    <div class="head-actions">
+                        <div class="meter" id="meter" title="Microphone level — the notch is the noise gate" aria-hidden="true">
+                            <span class="meter-fill" id="meterFill"></span>
+                            <span class="meter-gate" id="meterGate"></span>
+                        </div>
+                        <button type="button" class="btn btn-mic" id="micBtn" aria-pressed="false">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v4"/></svg>
+                            <span class="btn-label">Start listening</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="trace-plot">
+                    <canvas id="traceCanvas" role="img" aria-label="Graph of your pitch over the last few seconds"></canvas>
+                    <div class="trace-empty" id="traceEmpty">
+                        <svg viewBox="0 0 120 40" aria-hidden="true"><path d="M2 30 C 18 30, 22 12, 38 12 S 58 26, 74 22 S 98 8, 118 10"/></svg>
+                        <p><strong>Your voice, drawn live.</strong> Start listening and sing — the line follows your pitch across the note lanes. Notes you play show up as bars to sing along with.</p>
+                    </div>
+                </div>
+                <div class="trace-options">
+                    <label class="toggle" title="Fold any voice range onto these notes, so higher and lower voices can practise too">
+                        <input type="checkbox" id="optOctave" checked>
+                        <span class="toggle-ui" aria-hidden="true"></span>
+                        <span>Any octave</span>
+                    </label>
+                    <label class="toggle" title="Only needed if you play tones through speakers instead of headphones">
+                        <input type="checkbox" id="optEcho">
+                        <span class="toggle-ui" aria-hidden="true"></span>
+                        <span>Echo cancel</span>
+                    </label>
+                    <label class="range-field" title="Lower it in a noisy room; raise it if quiet singing isn't picked up">
+                        <span>Sensitivity</span>
+                        <input type="range" id="optSensitivity" min="0" max="1" step="0.05" value="0.5">
+                    </label>
+                </div>
+            </section>
 
-        <div id="liveDetector" class="live-detector">
-            <div class="mic-header">
-                <button id="startMic">Start Mic</button>
-                <button id="stopMic" style="display:none;">Stop Mic</button>
-            </div>
-            <div id="liveFreq">Live: -- Hz</div>
-            <div id="liveNote">Closest note: --</div>
-            <div id="micStatus" class="mic-status"></div>
-        </div>
+            <section class="card deck" aria-label="Notes and playback">
+                <div class="keys" id="keys" role="group" aria-label="Notes"></div>
+                <div class="transport">
+                    <div class="segmented" role="radiogroup" aria-label="Waveform" id="waveform">
+                        <label title="Pure and soft">
+                            <input type="radio" name="wave" value="sine" checked>
+                            <span><svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6c2.75-6.5 5.25-6.5 8 0s5.25 6.5 8 0 3.5-4 6-3"/></svg>Sine</span>
+                        </label>
+                        <label title="Mellow, flute-like">
+                            <input type="radio" name="wave" value="triangle">
+                            <span><svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6l4-5 7 10 7-10 4 5"/></svg>Triangle</span>
+                        </label>
+                        <label title="Bright and buzzy">
+                            <input type="radio" name="wave" value="sawtooth">
+                            <span><svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 11l10-10v10l10-10v10"/></svg>Saw</span>
+                        </label>
+                        <label title="Hollow, reedy">
+                            <input type="radio" name="wave" value="square">
+                            <span><svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 11V1h7v10h7V1h7v10"/></svg>Square</span>
+                        </label>
+                    </div>
+                    <label class="volume">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+                        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.6" aria-label="Volume">
+                        <output id="volumeValue" for="volume">60%</output>
+                    </label>
+                    <div class="transport-buttons">
+                        <button type="button" class="btn btn-primary" id="scaleBtn">
+                            <svg class="icon icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg>
+                            <span class="btn-label">Play scale</span>
+                        </button>
+                        <button type="button" class="btn" id="stopBtn">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                            <span>Stop</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
 
-        <div id="notes" class="notes-grid"></div>
+        <footer class="footer">
+            <p class="shortcuts">
+                <kbd>1</kbd>–<kbd>8</kbd> play a note <span aria-hidden="true">·</span>
+                <kbd>P</kbd> play scale <span aria-hidden="true">·</span>
+                <kbd>M</kbd> microphone <span aria-hidden="true">·</span>
+                <kbd>Esc</kbd> stop
+            </p>
+            <p>Equal temperament, A4 = 440 Hz · Built with the Web Audio API · <a href="https://github.com/jitendraphand/Swaras" target="_blank" rel="noopener">Source on GitHub</a></p>
+        </footer>
+    </div>
 
-        <div class="controls">
-            <button id="playSequence">Play Sequence</button>
-            <button id="stopAll">Stop</button>
-        </div>
-    </main>
+    <div class="sr-only" id="announcer" aria-live="polite"></div>
 
-    <footer>
-        <p>Built with Web Audio API • Equal temperament (A4 = 440 Hz) • <a href="https://github.com/jitendraphand/Swaras" target="_blank">GitHub</a></p>
-        <p class="footer-note">Click any note (audio needs a user gesture). Keyboard: C D E F G A B H • Esc/Space to stop. Mic requires permission.</p>
-    </footer>
-
+    <script src="pitch.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
